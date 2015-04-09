@@ -54,7 +54,20 @@ int my_dev_release (struct inode *inode, struct file *filp)
 ssize_t my_dev_write (struct file *filp, const char __user *buf, size_t count, loff_t *f_pos)
 {
 	printk(KERN_NOTICE "*** my_dev: WRITE\n");
-	return 2;
+
+    int retval = 0;
+    memset( data, 0, sizeof( data ) );
+
+    if (copy_from_user(data, buf, count)) 
+    {
+        retval = -EFAULT;
+        goto out;
+    }
+
+	return count;
+
+out:
+    return retval;
 }
 
 int flag = 0;

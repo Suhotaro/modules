@@ -5,11 +5,9 @@ obj-m := hello.o
 # Иначе вызов сделан прямо из командной
 # строки; вызвать систему сборки ядра.
 else
-KERNELDIR ?= /home/roma/1.Sources/5.Linux/linux-arm64
-#KERNELDIR ?= /lib/modules/3.16.0-33-generic/build/
-
+#KERNELDIR ?= /home/roma/1.Sources/5.Linux/linux-arm64
+KERNELDIR ?= /lib/modules/$(shell uname -r)/build/
 PWD := $(shell pwd)
-default:
-	cd /home/roma/1.Sources/5.Linux/linux-arm64
+default:	
 	$(MAKE) -C $(KERNELDIR) M=$(PWD) modules
 endif
