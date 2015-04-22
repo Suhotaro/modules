@@ -28,10 +28,15 @@ typedef struct my_dev
 	char name[10];
 	int num;
 
-	struct cdev chardev;
+	struct cdev chardev; /* chardev file operations */
+
+	struct semaphore sem;     /* Mutual exclusion */
+
 } my_dev, *pmy_dev;
 
 pmy_dev mycdev;
+
+/*------------------------------------------------------------------------------------------*/
 
 int my_dev_open (struct inode *inode, struct file *filp)
 {
@@ -44,17 +49,56 @@ int my_dev_open (struct inode *inode, struct file *filp)
 	return 0;
 }
 
+/*------------------------------------------------------------------------------------------*/
+
 int my_dev_release (struct inode *inode, struct file *filp)
 {
 	printk(KERN_NOTICE "*** my_dev: RELEASE\n");
 	return 0;
 }
 
-int c = 3;
+/*------------------------------------------------------------------------------------------*/
 
 ssize_t my_dev_write (struct file *filp, const char __user *buf, size_t count, loff_t *f_pos)
 {
     printk(KERN_NOTICE "*** my_dev: WRITE\n");
+
+    pmy_dev mycdev = filp->private_data;
+
+    filp
+
+    int retval = 0;
+    memset( data, 0, sizeof( data ) );
+
+    if (down_interruptible(&->sem))
+    	return -ERESTARTSYS;
+
+    if (copy_from_user(data, buf, count)) 
+    {
+        retval = -EFAULT;
+        goto out;
+    }
+
+    up(&dev->sem);
+
+	return count;
+
+out:
+    return retval;
+}
+
+/*------------------------------------------------------------------------------------------*/
+
+int flag = 0;
+int c = 3;
+
+ssize_t my_dev_read (struct file *filp, char __user *buf, size_t count, loff_t *f_pos)
+{
+
+	int retval = 0;
+
+	printk(KERN_NOTICE "*** my_dev: READ\n");
+
 
     int a = 1;
     int *b = kmalloc( sizeof(int), GFP_KERNEL);
@@ -63,32 +107,6 @@ ssize_t my_dev_write (struct file *filp, const char __user *buf, size_t count, l
      printk(KERN_NOTICE "+++%d %p\n+++%d %p\n+++%d %p\n+++buff %p\n",
 		a, &a, *b, b, c, &c, buf);
 
-
-
-
-    int retval = 0;
-    memset( data, 0, sizeof( data ) );
-
-    if (copy_from_user(data, buf, count)) 
-    {
-        retval = -EFAULT;
-        goto out;
-    }
-
-	return count;
-
-out:
-    return retval;
-}
-
-int flag = 0;
-
-ssize_t my_dev_read (struct file *filp, char __user *buf, size_t count, loff_t *f_pos)
-{
-
-	int retval = 0;
-
-	printk(KERN_NOTICE "*** my_dev: READ\n");
 
 	if( 0 == flag )
 	{
@@ -151,13 +169,16 @@ static int my_dev_init(void)
 
     printk(KERN_ALERT "*** my_dev_init: init\n");
 
-    if( major ) {
+    if( major )
+    {
     	res = register_chrdev_region(dev, minor, "my_dev");
     }
-    else {
+    else
+    {
     	res = alloc_chrdev_region(&dev, 0, minor, "my_dev");
     	major = MAJOR(dev);
     }
+
 	if (res < 0)
 		return res;
 
@@ -171,7 +192,11 @@ static int my_dev_init(void)
 		goto fail_malloc;
 	}
 
+
 	memset( mycdev, 0, sizeof( my_dev ) );
+
+	init_MUTEX( mycdev->sem );
+
 	setup_cdev( mycdev, 0 );
 	printk(KERN_ALERT "*** my_dev_init: init is finished\n");
 
