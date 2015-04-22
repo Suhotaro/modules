@@ -50,10 +50,21 @@ int my_dev_release (struct inode *inode, struct file *filp)
 	return 0;
 }
 
+int c = 3;
 
 ssize_t my_dev_write (struct file *filp, const char __user *buf, size_t count, loff_t *f_pos)
 {
-	printk(KERN_NOTICE "*** my_dev: WRITE\n");
+    printk(KERN_NOTICE "*** my_dev: WRITE\n");
+
+    int a = 1;
+    int *b = kmalloc( sizeof(int), GFP_KERNEL);
+    *b = 2;
+
+     printk(KERN_NOTICE "+++%d %p\n+++%d %p\n+++%d %p\n+++buff %p\n",
+		a, &a, *b, b, c, &c, buf);
+
+
+
 
     int retval = 0;
     memset( data, 0, sizeof( data ) );
