@@ -13,7 +13,7 @@ int main( int argc, char **argv )
     while( 1 )
     {
     	char str[20];
-    	int =  read(ofile, str, 20 );
+    	int num =  read( ofile, str, 20 );
     }
 
     return 0;

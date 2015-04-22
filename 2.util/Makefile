@@ -17,4 +17,4 @@ util2 : util2.c
 .PHONY : clean
 
 clean:
-	rm *.o util util2
+	rm util util2

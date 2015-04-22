@@ -12,6 +12,8 @@
 #include <linux/aio.h>
 #include <linux/cdev.h>
 #include <asm/uaccess.h>
+#include <linux/mutex.h>
+
 
 MODULE_LICENSE("Dual BSD/GPL");
 
@@ -61,16 +63,16 @@ int my_dev_release (struct inode *inode, struct file *filp)
 
 ssize_t my_dev_write (struct file *filp, const char __user *buf, size_t count, loff_t *f_pos)
 {
+	pmy_dev mycdev = NULL;
+	int retval = 0;
+
     printk(KERN_NOTICE "*** my_dev: WRITE\n");
 
-    pmy_dev mycdev = filp->private_data;
 
-    filp
-
-    int retval = 0;
+    mycdev = filp->private_data;
     memset( data, 0, sizeof( data ) );
 
-    if (down_interruptible(&->sem))
+    if (down_interruptible(&mycdev->sem))
     	return -ERESTARTSYS;
 
     if (copy_from_user(data, buf, count)) 
@@ -79,7 +81,7 @@ ssize_t my_dev_write (struct file *filp, const char __user *buf, size_t count, l
         goto out;
     }
 
-    up(&dev->sem);
+    up(&mycdev->sem);
 
 	return count;
 
@@ -97,16 +99,14 @@ ssize_t my_dev_read (struct file *filp, char __user *buf, size_t count, loff_t *
 
 	int retval = 0;
 
-	printk(KERN_NOTICE "*** my_dev: READ\n");
-
-
     int a = 1;
     int *b = kmalloc( sizeof(int), GFP_KERNEL);
     *b = 2;
 
-     printk(KERN_NOTICE "+++%d %p\n+++%d %p\n+++%d %p\n+++buff %p\n",
-		a, &a, *b, b, c, &c, buf);
 
+	printk(KERN_NOTICE "*** my_dev: READ\n");
+    printk(KERN_NOTICE "+++%d %p\n+++%d %p\n+++%d %p\n+++buff %p\n",
+    			a, &a, *b, b, c, &c, buf);
 
 	if( 0 == flag )
 	{
@@ -195,7 +195,7 @@ static int my_dev_init(void)
 
 	memset( mycdev, 0, sizeof( my_dev ) );
 
-	init_MUTEX( mycdev->sem );
+	sema_init( &mycdev->sem, 1 );
 
 	setup_cdev( mycdev, 0 );
 	printk(KERN_ALERT "*** my_dev_init: init is finished\n");
