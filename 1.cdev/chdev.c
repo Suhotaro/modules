@@ -96,20 +96,42 @@ int c = 3;
 
 ssize_t my_dev_read (struct file *filp, char __user *buf, size_t count, loff_t *f_pos)
 {
+	pmy_dev mycdev = NULL;
 
 	int retval = 0;
-
+/*
     int a = 1;
     int *b = kmalloc( sizeof(int), GFP_KERNEL);
     *b = 2;
+*/
+    mycdev = filp->private_data;
 
+/*
+    if (down_interruptible(&mycdev->sem))
+    	return -ERESTARTSYS;
+*/
 
 	printk(KERN_NOTICE "*** my_dev: READ\n");
+
+	/*
     printk(KERN_NOTICE "+++%d %p\n+++%d %p\n+++%d %p\n+++buff %p\n",
     			a, &a, *b, b, c, &c, buf);
 
+    kfree(b);
+    */
+
+	printk(KERN_NOTICE "*** beginnig %d\n", mycdev->sem.count);
+
+    if (down_killable(&mycdev->sem))
+    {
+    	printk(KERN_NOTICE "***wait\n");
+       	return -EINTR;
+    }
+
 	if( 0 == flag )
 	{
+	    printk(KERN_NOTICE "*** sem_down %d\n", mycdev->sem.count);
+
 		count = 50;
 
 		if (copy_to_user (buf, data, count))
@@ -120,13 +142,25 @@ ssize_t my_dev_read (struct file *filp, char __user *buf, size_t count, loff_t *
 
 		flag = 1;
 
+		up(&mycdev->sem);
+
+		printk(KERN_NOTICE "*** 1 up %d\n", mycdev->sem.count);
+
 		return count;
 	}
 	else
 	{
 		flag = 0;
+
+		up(&mycdev->sem);
+		printk(KERN_NOTICE "*** 2 up %d\n", mycdev->sem.count);
+
 		return 0;
 	}
+
+    up(&mycdev->sem);
+
+    printk(KERN_NOTICE "*** last up %d\n", mycdev->sem.count);
 
 nothing:
 	return retval;
