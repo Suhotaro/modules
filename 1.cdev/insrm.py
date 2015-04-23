@@ -34,7 +34,7 @@ def remove_module():
     subprocess.call(['sudo', 'rmmod', 'chdev.ko'])
     print 'success\n'
 
-    print '1: remove chdev.ko'
+    print '1: remove /dev/mychdev'
     subprocess.call(['sudo', 'rm', '/dev/mychdev'])
     print 'success\n'
 

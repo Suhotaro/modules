@@ -71,7 +71,9 @@ ssize_t my_dev_write (struct file *filp, const char __user *buf, size_t count, l
 
     printk(KERN_NOTICE "*** my_dev: WRITE\n");
 
-
+/*
+    up(&mycdev->sem);
+*/
     mycdev = filp->private_data;
     memset( data, 0, sizeof( data ) );
 
@@ -107,13 +109,8 @@ ssize_t my_dev_read (struct file *filp, char __user *buf, size_t count, loff_t *
 
 	printk(KERN_NOTICE "*** my_dev: READ\n");
 
-/*
-    if (down_killable(&mycdev->sem))
-    {
-    	printk(KERN_NOTICE "***wait\n");
-       	return -EINTR;
-    }
-*/
+    if (down_interruptible(&mycdev->sem))
+    	return -ERESTARTSYS;
 
 	if( 0 == flag )
 	{
@@ -126,15 +123,20 @@ ssize_t my_dev_read (struct file *filp, char __user *buf, size_t count, loff_t *
 		}
 
 		flag = 1;
+	    up(&mycdev->sem);
 		return count;
 	}
 	else
 	{
 		flag = 0;
+	    up(&mycdev->sem);
 		return 0;
 	}
 
+
+
 nothing:
+	up(&mycdev->sem);
 	return retval;
 
 }
