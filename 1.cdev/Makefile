@@ -13,4 +13,4 @@ default:
 endif
 
 clean:
-	rm -r *.ko mod* Mod* .c* *.o .ch* chdev.m* .tmp*
+	rm -r *.ko modules* Mod* .c* *.o .ch* chdev.m* .tmp*

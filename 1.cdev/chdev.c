@@ -32,7 +32,10 @@ typedef struct my_dev
 
 	struct cdev chardev; /* chardev file operations */
 
-	struct semaphore sem;     /* Mutual exclusion */
+	struct semaphore sem;
+
+	struct mutex mut; /* Mutual exclusion */
+
 
 } my_dev, *pmy_dev;
 
@@ -99,39 +102,21 @@ ssize_t my_dev_read (struct file *filp, char __user *buf, size_t count, loff_t *
 	pmy_dev mycdev = NULL;
 
 	int retval = 0;
-/*
-    int a = 1;
-    int *b = kmalloc( sizeof(int), GFP_KERNEL);
-    *b = 2;
-*/
-    mycdev = filp->private_data;
 
-/*
-    if (down_interruptible(&mycdev->sem))
-    	return -ERESTARTSYS;
-*/
+    mycdev = filp->private_data;
 
 	printk(KERN_NOTICE "*** my_dev: READ\n");
 
-	/*
-    printk(KERN_NOTICE "+++%d %p\n+++%d %p\n+++%d %p\n+++buff %p\n",
-    			a, &a, *b, b, c, &c, buf);
-
-    kfree(b);
-    */
-
-	printk(KERN_NOTICE "*** beginnig %d\n", mycdev->sem.count);
-
+/*
     if (down_killable(&mycdev->sem))
     {
     	printk(KERN_NOTICE "***wait\n");
        	return -EINTR;
     }
+*/
 
 	if( 0 == flag )
 	{
-	    printk(KERN_NOTICE "*** sem_down %d\n", mycdev->sem.count);
-
 		count = 50;
 
 		if (copy_to_user (buf, data, count))
@@ -141,26 +126,13 @@ ssize_t my_dev_read (struct file *filp, char __user *buf, size_t count, loff_t *
 		}
 
 		flag = 1;
-
-		up(&mycdev->sem);
-
-		printk(KERN_NOTICE "*** 1 up %d\n", mycdev->sem.count);
-
 		return count;
 	}
 	else
 	{
 		flag = 0;
-
-		up(&mycdev->sem);
-		printk(KERN_NOTICE "*** 2 up %d\n", mycdev->sem.count);
-
 		return 0;
 	}
-
-    up(&mycdev->sem);
-
-    printk(KERN_NOTICE "*** last up %d\n", mycdev->sem.count);
 
 nothing:
 	return retval;
@@ -190,7 +162,7 @@ static void setup_cdev( pmy_dev mycdev, int index )
 	err = cdev_add (&mycdev->chardev, devno, 1);
 	/* Fail gracefully if need be */
 
-	printk(KERN_NOTICE "*** setup_cdev: devno-%d\n", devno );
+	printk(KERN_NOTICE "*** setup_cdev: devno: %d\n", devno );
 
 	if (err)
 		printk(KERN_NOTICE "Error %d adding scull%d", err, index);
@@ -217,7 +189,7 @@ static int my_dev_init(void)
 		return res;
 
 	strcpy( data, "Hello from driver to user\n" );
-	printk(KERN_ALERT "*** my_dev_init: dev-%d major-%d\n", dev, major );
+	printk(KERN_NOTICE "*** my_dev_init: dev: %d major: %d\n", dev, major );
 
 	mycdev = kmalloc( sizeof (my_dev), GFP_KERNEL);
 	if( !mycdev )
@@ -230,6 +202,7 @@ static int my_dev_init(void)
 	memset( mycdev, 0, sizeof( my_dev ) );
 
 	sema_init( &mycdev->sem, 1 );
+	//init_mutex( &mycdev->mut );
 
 	setup_cdev( mycdev, 0 );
 	printk(KERN_ALERT "*** my_dev_init: init is finished\n");
@@ -247,7 +220,7 @@ fail_malloc:
 
 static void my_dev_exit(void)
 {
-    printk(KERN_ALERT "*** my_dev_init: deinit\n");
+    printk(KERN_ALERT "*** my_dev_exit: deinit\n");
 
     cdev_del(&mycdev->chardev);
     kfree(mycdev);
