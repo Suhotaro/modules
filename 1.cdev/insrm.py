@@ -27,6 +27,8 @@ def insert_module():
     dev = os.makedev(major, 0)
 
     os.mknod(filename, mode, dev)
+
+    subprocess.call('sudo chmod 777 /dev/mychdev', shell=True)
     print 'success'
 
 def remove_module():

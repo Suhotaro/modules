@@ -26,9 +26,13 @@ int main( int argc, char **argv )
     close(fd);
     fd = open( "/dev/mychdev", O_RDWR, 777 );
 
-    char str2[20] = "www\n";
+    int n = 0;
+    scanf( "%d", &n );
+
+    char str2[20] = "aaa\n";
     num = write( fd, str2, 10 );
 
+/*
     sleep(3);
 
     close(fd);
@@ -43,11 +47,7 @@ int main( int argc, char **argv )
     	printf( "Error opening file: %s\n", (char *)strerror( errno ) );
     else
     	printf( "STR: %s\n", arr );
-
-
-
-
-
+*/
 
     return 0;
 }

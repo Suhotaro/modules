@@ -69,24 +69,31 @@ ssize_t my_dev_write (struct file *filp, const char __user *buf, size_t count, l
 	pmy_dev mycdev = NULL;
 	int retval = 0;
 
-    printk(KERN_NOTICE "*** my_dev: WRITE\n");
+	printk(KERN_NOTICE "*** my_dev: WRITE\n");
 
-/*
+	mycdev = filp->private_data;
+
+    printk(KERN_ALERT "*** 1 WRITE: %d\n", mycdev->sem.count);
+
     up(&mycdev->sem);
-*/
-    mycdev = filp->private_data;
+
+    printk(KERN_ALERT "*** 2 WRITE: %d\n", mycdev->sem.count);
+
     memset( data, 0, sizeof( data ) );
 
+/*
     if (down_interruptible(&mycdev->sem))
     	return -ERESTARTSYS;
-
+*/
     if (copy_from_user(data, buf, count)) 
     {
         retval = -EFAULT;
         goto out;
     }
 
+/*
     up(&mycdev->sem);
+*/
 
 	return count;
 
@@ -96,8 +103,6 @@ out:
 
 /*------------------------------------------------------------------------------------------*/
 
-int flag = 0;
-int c = 3;
 
 ssize_t my_dev_read (struct file *filp, char __user *buf, size_t count, loff_t *f_pos)
 {
@@ -109,34 +114,27 @@ ssize_t my_dev_read (struct file *filp, char __user *buf, size_t count, loff_t *
 
 	printk(KERN_NOTICE "*** my_dev: READ\n");
 
+	printk(KERN_ALERT "*** 1 READ: %d\n", mycdev->sem.count);
+
     if (down_interruptible(&mycdev->sem))
     	return -ERESTARTSYS;
 
-	if( 0 == flag )
-	{
-		count = 50;
+    printk(KERN_ALERT "*** 2 READ: %d\n", mycdev->sem.count);
 
-		if (copy_to_user (buf, data, count))
-		{
-			retval = -EFAULT;
-			goto nothing;
-		}
-
-		flag = 1;
-	    up(&mycdev->sem);
-		return count;
-	}
-	else
+	if (copy_to_user (buf, data, count))
 	{
-		flag = 0;
-	    up(&mycdev->sem);
-		return 0;
+		retval = -EFAULT;
+		goto nothing;
 	}
 
+/*	up(&mycdev->sem); */
 
+	return count;
 
 nothing:
+/*
 	up(&mycdev->sem);
+*/
 	return retval;
 
 }
