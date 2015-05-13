@@ -31,114 +31,93 @@ typedef struct my_dev
 	int num;
 
 	struct cdev chardev; /* chardev file operations */
-
-	struct semaphore sem;
-
-	struct mutex mut; /* Mutual exclusion */
-
+	struct mutex mutex; /* Mutual exclusion */
+	struct completion my_completion;
 
 } my_dev, *pmy_dev;
 
 pmy_dev mycdev;
 
-/*------------------------------------------------------------------------------------------*/
 
 int my_dev_open (struct inode *inode, struct file *filp)
 {
 	pmy_dev dv;
 	dv = container_of(inode->i_cdev, struct my_dev, chardev );
 
-	printk(KERN_NOTICE "*** my_dev: OPEN %s %d\n", dv->name, dv->num );
+	printk(KERN_NOTICE "mychdev: OPEN %s\n", dv->name );
 
 	filp->private_data = dv;
 	return 0;
 }
-
 /*------------------------------------------------------------------------------------------*/
 
 int my_dev_release (struct inode *inode, struct file *filp)
 {
-	printk(KERN_NOTICE "*** my_dev: RELEASE\n");
+	printk(KERN_NOTICE "mychdev: RELEASE\n");
 	return 0;
 }
-
 /*------------------------------------------------------------------------------------------*/
 
 ssize_t my_dev_write (struct file *filp, const char __user *buf, size_t count, loff_t *f_pos)
 {
+	printk(KERN_NOTICE "mycdev: WRITE\n");
+
 	pmy_dev mycdev = NULL;
 	int retval = 0;
 
-	printk(KERN_NOTICE "*** my_dev: WRITE\n");
-
 	mycdev = filp->private_data;
-
-    printk(KERN_ALERT "*** 1 WRITE: %d\n", mycdev->sem.count);
-
-    up(&mycdev->sem);
-
-    printk(KERN_ALERT "*** 2 WRITE: %d\n", mycdev->sem.count);
-
     memset( data, 0, sizeof( data ) );
 
-/*
-    if (down_interruptible(&mycdev->sem))
-    	return -ERESTARTSYS;
-*/
+    mutex_lock(&mycdev->mutex);
+
     if (copy_from_user(data, buf, count)) 
     {
         retval = -EFAULT;
-        goto out;
+        mutex_unlock(&mycdev->mutex);
+
+        return retval;
     }
 
-/*
-    up(&mycdev->sem);
-*/
+    mutex_unlock(&mycdev->mutex);
 
 	return count;
-
-out:
-    return retval;
 }
-
 /*------------------------------------------------------------------------------------------*/
-
 
 ssize_t my_dev_read (struct file *filp, char __user *buf, size_t count, loff_t *f_pos)
 {
-	pmy_dev mycdev = NULL;
+	printk(KERN_NOTICE "mychdev: READ\n");
 
+	pmy_dev mycdev = NULL;
 	int retval = 0;
 
+	atomic_t v2, v1 = ATOMIC_INIT(2);
+	atomic_set( &v2, 3);
+
+	printk(KERN_DEBUG "mychdev: 1 Atomic v1=%d v2=%d\n", v1, atomic_read(&v2) );
+
+	atomic_inc(&v2);
+	atomic_add( 2, &v2);
+
+	printk(KERN_DEBUG "mychdev: 2 Atomic v1=%d v2=%d\n", v1, atomic_read(&v2) );
+
+
     mycdev = filp->private_data;
-
-	printk(KERN_NOTICE "*** my_dev: READ\n");
-
-	printk(KERN_ALERT "*** 1 READ: %d\n", mycdev->sem.count);
-
-    if (down_interruptible(&mycdev->sem))
-    	return -ERESTARTSYS;
-
-    printk(KERN_ALERT "*** 2 READ: %d\n", mycdev->sem.count);
+    mutex_lock(&mycdev->mutex);
 
 	if (copy_to_user (buf, data, count))
 	{
 		retval = -EFAULT;
-		goto nothing;
+		mutex_unlock(&mycdev->mutex);
+
+		return retval;
 	}
 
-/*	up(&mycdev->sem); */
+	mutex_unlock(&mycdev->mutex);
 
 	return count;
-
-nothing:
-/*
-	up(&mycdev->sem);
-*/
-	return retval;
-
 }
-
+/*------------------------------------------------------------------------------------------*/
 
 struct file_operations my_fops =
 {
@@ -159,11 +138,8 @@ static void setup_cdev( pmy_dev mycdev, int index )
 	cdev_init( &mycdev->chardev, &my_fops );
 	mycdev->chardev.owner = THIS_MODULE;
 	mycdev->chardev.ops = &my_fops;
+
 	err = cdev_add (&mycdev->chardev, devno, 1);
-	/* Fail gracefully if need be */
-
-	printk(KERN_NOTICE "*** setup_cdev: devno: %d\n", devno );
-
 	if (err)
 		printk(KERN_NOTICE "Error %d adding scull%d", err, index);
 }
@@ -173,7 +149,7 @@ static int my_dev_init(void)
     int res;
     dev_t dev = MKDEV(major, 0);
 
-    printk(KERN_ALERT "*** my_dev_init: init\n");
+    printk(KERN_ALERT "mychdev: INIT\n");
 
     if( major )
     {
@@ -189,7 +165,7 @@ static int my_dev_init(void)
 		return res;
 
 	strcpy( data, "Hello from driver to user\n" );
-	printk(KERN_NOTICE "*** my_dev_init: dev: %d major: %d\n", dev, major );
+	printk(KERN_NOTICE "mychdev: dev: %d major: %d\n", dev, major );
 
 	mycdev = kmalloc( sizeof (my_dev), GFP_KERNEL);
 	if( !mycdev )
@@ -198,14 +174,14 @@ static int my_dev_init(void)
 		goto fail_malloc;
 	}
 
+	memset(mycdev, 0, sizeof(my_dev));
 
-	memset( mycdev, 0, sizeof( my_dev ) );
-
-	sema_init( &mycdev->sem, 1 );
-	//init_mutex( &mycdev->mut );
+	mutex_init(&mycdev->mutex);
+	init_completion(&mycdev->my_completion); /* temporary it is not used */
 
 	setup_cdev( mycdev, 0 );
-	printk(KERN_ALERT "*** my_dev_init: init is finished\n");
+
+	printk(KERN_ALERT "mychdev: INIT END\n");
 
     return 0;
 
@@ -215,12 +191,9 @@ fail_malloc:
 	return res;
 }
 
-
-
-
 static void my_dev_exit(void)
 {
-    printk(KERN_ALERT "*** my_dev_exit: deinit\n");
+    printk(KERN_ALERT "mychdev: DEINIT\n");
 
     cdev_del(&mycdev->chardev);
     kfree(mycdev);
@@ -228,3 +201,4 @@ static void my_dev_exit(void)
 
 module_init(my_dev_init);
 module_exit(my_dev_exit);
+

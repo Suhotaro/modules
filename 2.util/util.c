@@ -14,8 +14,8 @@ int main( int argc, char **argv )
     int fd = open( "/dev/mychdev", O_RDWR, 777 );
     printf("%d\n", fd);
 
-    char str[20] = {0,};
-    int num =  read( fd, str, 20 );
+    char str[50] = {0,};
+    int num =  read( fd, str, 50 );
 
 
     if( num < 0 )
@@ -38,10 +38,9 @@ int main( int argc, char **argv )
     close(fd);
     fd = open( "/dev/mychdev", O_RDWR, 777 );
 
-    char arr[20] = {0,};
+    char arr[50] = {0,};
 
-    num =  read( fd, arr, 20 );
-
+    num =  read( fd, arr, 50 );
 
     if( num < 0 )
     	printf( "Error opening file: %s\n", (char *)strerror( errno ) );
