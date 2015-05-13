@@ -90,10 +90,9 @@ ssize_t my_dev_read (struct file *filp, char __user *buf, size_t count, loff_t *
 
 long my_dev_ioctl (struct file *filp, unsigned int cmd, unsigned long arg)
 {
-	int err = 0, ret = 0, tmp = 0;
+	printk(KERN_NOTICE "mycdev: IOCTL\n");
 
-	(void)ret;
-	(void)tmp;
+	int err = 0, retval = 0, num = 0;
 
 	/* don't even decode wrong cmds: better returning  ENOTTY than EFAULT */
 	if (_IOC_TYPE(cmd) != CHDEV_IOC_MAGIC) return -ENOTTY;
@@ -105,7 +104,26 @@ long my_dev_ioctl (struct file *filp, unsigned int cmd, unsigned long arg)
 		err = !access_ok(VERIFY_READ, (void __user *)arg, _IOC_SIZE(cmd));
 	if (err) return -EFAULT;
 
-	return 0;
+	switch(cmd)
+	{
+		case CHDEV_IOGET:
+			num = 5;
+			retval = __put_user( num, (int __user *)arg);
+
+			printk(KERN_NOTICE "mycdev: IOCTL seted val retval=%d num=%d\n", retval, num);
+			break;
+
+		case CHDEV_IOSET:
+			retval = __get_user( num, (int __user *)arg);
+
+			printk(KERN_NOTICE "mycdev: IOCTL geted val retval=%d num=%d\n", retval, num);
+			break;
+
+		default:  /* redundant, as cmd was checked against MAXNR */
+			return -ENOTTY;
+	}
+
+	return retval;
 }
 
 struct file_operations my_fops =
