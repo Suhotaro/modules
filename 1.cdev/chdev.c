@@ -14,30 +14,10 @@
 #include <asm/uaccess.h>
 #include <linux/mutex.h>
 
+#include "chdev.h"
 
-MODULE_LICENSE("Dual BSD/GPL");
-
-int major = 0; /* Dynamic major default */
-int minor = 1; /* Device minor number */
-char data[50];
-
-module_param(major, int, 0);
-module_param(minor, int, 0);
-MODULE_AUTHOR("Roman Peresipkyn");
-
-typedef struct my_dev
-{
-	char name[10];
-	int num;
-
-	struct cdev chardev; /* chardev file operations */
-	struct mutex mutex; /* Mutual exclusion */
-	struct completion my_completion;
-
-} my_dev, *pmy_dev;
-
-pmy_dev mycdev;
-
+pmy_dev mycdev; /* main structure */
+char data[50]; /* buffer for comunicating with user-spcae read/write */
 
 int my_dev_open (struct inode *inode, struct file *filp)
 {
@@ -91,17 +71,6 @@ ssize_t my_dev_read (struct file *filp, char __user *buf, size_t count, loff_t *
 	pmy_dev mycdev = NULL;
 	int retval = 0;
 
-	atomic_t v2, v1 = ATOMIC_INIT(2);
-	atomic_set( &v2, 3);
-
-	printk(KERN_DEBUG "mychdev: 1 Atomic v1=%d v2=%d\n", v1, atomic_read(&v2) );
-
-	atomic_inc(&v2);
-	atomic_add( 2, &v2);
-
-	printk(KERN_DEBUG "mychdev: 2 Atomic v1=%d v2=%d\n", v1, atomic_read(&v2) );
-
-
     mycdev = filp->private_data;
     mutex_lock(&mycdev->mutex);
 
@@ -119,12 +88,33 @@ ssize_t my_dev_read (struct file *filp, char __user *buf, size_t count, loff_t *
 }
 /*------------------------------------------------------------------------------------------*/
 
+long my_dev_ioctl (struct file *filp, unsigned int cmd, unsigned long arg)
+{
+	int err = 0, ret = 0, tmp = 0;
+
+	(void)ret;
+	(void)tmp;
+
+	/* don't even decode wrong cmds: better returning  ENOTTY than EFAULT */
+	if (_IOC_TYPE(cmd) != CHDEV_IOC_MAGIC) return -ENOTTY;
+	if (_IOC_NR(cmd) > CHDEV_IOC_MAXNR) return -ENOTTY;
+
+	if (_IOC_DIR(cmd) & _IOC_READ)
+		err = !access_ok(VERIFY_WRITE, (void __user *)arg, _IOC_SIZE(cmd));
+	else if (_IOC_DIR(cmd) & _IOC_WRITE)
+		err = !access_ok(VERIFY_READ, (void __user *)arg, _IOC_SIZE(cmd));
+	if (err) return -EFAULT;
+
+	return 0;
+}
+
 struct file_operations my_fops =
 {
 		.owner =     THIS_MODULE,
 		.open =	     my_dev_open,
 		.read =	     my_dev_read,
 		.write =     my_dev_write,
+		.unlocked_ioctl =  my_dev_ioctl,
 		.release =   my_dev_release,
 };
 
