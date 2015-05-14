@@ -15,6 +15,8 @@
 #include <linux/mutex.h>
 
 #include "chdev.h"
+#include "chdev_ioctl.h"
+
 
 pmy_dev mycdev; /* main structure */
 char data[50]; /* buffer for comunicating with user-spcae read/write */
