@@ -128,6 +128,19 @@ long my_dev_ioctl (struct file *filp, unsigned int cmd, unsigned long arg)
 	return retval;
 }
 
+static int
+my_dev_proc_show( struct seq_file *m, void *v )
+{
+	seq_printf(m, "And one\n");
+	return 0;
+}
+
+static int
+my_dev_proc_open(struct inode *inode, struct file *file)
+{
+    return single_open(file, my_dev_proc_show, NULL);
+}
+
 struct file_operations my_fops =
 {
 		.owner =     THIS_MODULE,
@@ -136,6 +149,15 @@ struct file_operations my_fops =
 		.write =     my_dev_write,
 		.unlocked_ioctl =  my_dev_ioctl,
 		.release =   my_dev_release,
+};
+
+struct file_operations proc_fops =
+{
+		.owner   = THIS_MODULE,
+	    .open	 = my_dev_proc_open,
+	    .read	 = seq_read,
+	    .llseek	 = seq_lseek,
+	    .release = single_release,
 };
 
 static void setup_cdev( pmy_dev mycdev, int index )
@@ -193,6 +215,12 @@ static int my_dev_init(void)
 
 	printk(KERN_ALERT "mychdev: INIT END\n");
 
+#ifdef CHDEV_PORC
+
+	proc_create("mychdev", 0666, NULL, &proc_fops );
+	printk(KERN_ALERT "mychdev: proc ok\n");
+#endif
+
     return 0;
 
 fail_malloc:
@@ -204,6 +232,8 @@ fail_malloc:
 static void my_dev_exit(void)
 {
     printk(KERN_ALERT "mychdev: DEINIT\n");
+
+    remove_proc_entry("mychdev", NULL);
 
     cdev_del(&mycdev->chardev);
     kfree(mycdev);

@@ -8,8 +8,9 @@ else
 #KERNELDIR ?= /home/roma/1.Sources/5.Linux/linux-arm64
 KERNELDIR ?= /lib/modules/$(shell uname -r)/build/
 PWD := $(shell pwd)
+
 default:	
-	$(MAKE) -C $(KERNELDIR) M=$(PWD) modules
+	$(MAKE) -C $(KERNELDIR) M=$(PWD) KCPPFLAGS="-DCHDEV_PORC" modules
 endif
 
 clean:
