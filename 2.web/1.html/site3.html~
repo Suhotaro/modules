@@ -1,0 +1,54 @@
+<html>
+
+	<head>
+        <title>Atributs</title>
+	</head>
+
+
+	<body style="background-color:#AA0000;">
+        <h1 id="heading1" style="background-color:#99AA55;">HEAD</h1>
+        <p style="background-color:yellow; color:red;" style>some text</p>
+
+        <a href="http://www.html.net/" title="Go http://www.html.net/" >This is HTML.net link</a>
+        <br />
+        <a href="site2.html" title="Go to page 2">This is link to page 2</a>
+        <br />
+
+        <p>
+            1   
+            <img src="mountains.jpg" title="mountain" alt="Mountains" />
+            2
+        </p>
+
+        <h1 id="heading2" style="background-color:#00AA55;">HEAD 2</h1>
+        <p>
+           3
+            <img src="mountains2.jpg" title="mountain2" alt="Mountains" width="500" height="500" />
+           4   
+        </p>
+
+     <h1 id="heading3" style="background-color:#00AA55;">HEAD 3</h1>
+        <p>
+           5
+            <img src="http://www.html.net/logo.png" alt="HTML logo"/>
+           6
+        </p>
+
+
+        <a href="#heading1">Link to -> heading 1</a>
+        <br />
+        <a href="#heading2">Link to -> heading 2</a>
+        <br />
+        <a href="#heading3">Link to -> heading 3</a>
+        <br />
+        <p> This is link-image</p>
+        <a href="http://www.html.net">
+            <img src="http://www.html.net/logo.png">
+        </a>
+
+
+
+
+	</body>
+
+</html>
