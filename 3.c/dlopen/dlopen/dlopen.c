@@ -6,7 +6,7 @@ int main()
 {
     printf("Yoo\n");
 
-    liba_procedure();
+    liba_1();
 
     return 0;
 }
