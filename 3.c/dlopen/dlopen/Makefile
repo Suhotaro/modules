@@ -6,7 +6,7 @@ obj := $(patsubst %.c, %.o, $(filter %.c, $(src)))
 all : dlopen
 
 dlopen : $(obj)
-	gcc $^  -L../liba -la -o $@
+	gcc $^  -L../liba -la -ldl -o $@
 
 clean :
 	rm *.o

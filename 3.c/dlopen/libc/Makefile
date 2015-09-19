@@ -5,7 +5,7 @@ all : libc
 
 libc : libc.c
 	gcc -fPIC -c libc.c
-	gcc -shared libc.o  -o libc.so
+	gcc -shared libc.o -o libc.so
 
 clean :
 	rm *.o libc.so
