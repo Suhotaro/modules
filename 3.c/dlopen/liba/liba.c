@@ -24,6 +24,18 @@ void liba_1(void)
     my_dlopen();
 }
 
+
+void __attribute__ ((visibility("hidden"))) liba_2(void)
+{
+   printf("liba_2\n");
+}
+
+
+void liba_3(void)
+{
+   printf("liba_3\n");
+}
+
 void my_dlopen(void)
 {
     void *handle = NULL;
